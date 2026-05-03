@@ -1,86 +1,73 @@
 'use client'
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Papa from "papaparse"
+import { Html5QrcodeScanner } from "html5-qrcode"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { 
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter 
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 
 export default function Home() {
   const [bottles, setBottles] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [formData, setFormData] = useState({ name: '', customer: '', brand: '', date: '', note: '', memo: '' })
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const scannerRef = useRef<any>(null)
 
-  // 1. スプレッドシートからデータを読み込み
-  useEffect(() => {
+  // 1. スプレッドシート読み込み
+  const loadData = () => {
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrvNwjUCzQn96fo3pMMqvte6XZ89-cc5dbIqBDHSGjkgZnmOhSlu_oOc8ypSrWGcs8MvhZsKdCWJwU/pub?output=csv";
-    fetch(csvUrl)
-      .then(res => res.text())
-      .then(text => {
-        Papa.parse(text, {
-          header: true,
-          skipEmptyLines: true,
-          complete: (results) => setBottles(results.data)
-        });
-      });
-  }, []);
-
-  // 2. 新規登録処理 (ご自身のGAS URLをセットしてください)
-  const handleRegister = async () => {
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyDsiR_hGlU_cu35nqZ1ApvOv6AoKsuwK6COfKTznv9p_AwJ37dfK998oH0Pdwh7qG9/exec";
-    await fetch(`${GAS_URL}?action=register`, {
-      method: "POST",
-      body: JSON.stringify(formData)
-    });
-    alert("登録しました！");
+    fetch(csvUrl).then(res => res.text()).then(text => Papa.parse(text, { header: true, skipEmptyLines: true, complete: (res) => setBottles(res.data) }));
   };
 
-  const filteredBottles = bottles.filter(b => 
-    b["顧客名（漢字）"]?.includes(searchTerm) || 
-    b["ボトル銘柄"]?.includes(searchTerm) ||
-    b["ボトル番号"]?.includes(searchTerm)
-  );
+  useEffect(() => { loadData(); }, []);
+
+  // 2. スキャナー制御
+  useEffect(() => {
+    if (isScannerOpen) {
+      scannerRef.current = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
+      scannerRef.current.render((text) => { setSearchTerm(text); setIsScannerOpen(false); }, () => {});
+    } else if (scannerRef.current) {
+      scannerRef.current.clear();
+    }
+  }, [isScannerOpen]);
+
+  // 3. データ登録
+  const handleRegister = async () => {
+    const GAS_URL = "https://script.google.com/macros/s/（ここに新しいデプロイURL）/exec";
+    await fetch(`${GAS_URL}?action=register`, { method: "POST", body: JSON.stringify(formData) });
+    alert("登録しました！");
+    loadData(); // 即座に更新
+  };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-6 gap-6">
-      <h1 className="text-2xl font-bold">三島店 ボトルキープ管理</h1>
-      
-      <div className="flex flex-col w-full max-w-sm gap-4">
-        {/* 検索・一覧 */}
+    <main className="p-6">
+      <h1 className="text-xl font-bold mb-4">三島店 ボトルキープ管理</h1>
+      <div className="flex flex-col gap-4 max-w-sm">
+        
         <Dialog>
-          <DialogTrigger asChild><Button size="lg">🔍 ボトル検索・一覧</Button></DialogTrigger>
-          <DialogContent className="max-h-[80vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>ボトル検索</DialogTitle></DialogHeader>
-            <Input placeholder="名前、銘柄、または番号で検索" onChange={(e) => setSearchTerm(e.target.value)} />
-            {filteredBottles.map((b, i) => (
-              <div key={i} className="p-3 border rounded text-sm">
-                <p className="font-bold">{b["顧客名（漢字）"]}様</p>
-                <p>{b["ボトル銘柄"]} (No.{b["ボトル番号"]})</p>
-              </div>
+          <DialogTrigger asChild><Button size="lg">🔍 ボトル検索</Button></DialogTrigger>
+          <DialogContent className="h-[80vh] overflow-y-auto">
+            <Input placeholder="検索..." onChange={(e) => setSearchTerm(e.target.value)} />
+            {bottles.filter(b => b["顧客名（漢字）"]?.includes(searchTerm)).map((b, i) => (
+              <div key={i} className="p-2 border-b">{b["顧客名（漢字）"]}様 - {b["ボトル銘柄"]}</div>
             ))}
           </DialogContent>
         </Dialog>
 
-        {/* QR検索（擬似機能） */}
-        <Button variant="outline" size="lg" onClick={() => alert("スマホのカメラでQRを読み取ってください")}>
-          📷 QRコード検索
-        </Button>
+        <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
+          <DialogTrigger asChild><Button variant="outline" size="lg">📷 QR読み取り</Button></DialogTrigger>
+          <DialogContent><div id="reader"></div></DialogContent>
+        </Dialog>
 
-        {/* 新規登録 */}
         <Dialog>
-          <DialogTrigger asChild><Button variant="secondary" size="lg">＋ 新規ボトル登録</Button></DialogTrigger>
+          <DialogTrigger asChild><Button variant="secondary" size="lg">＋ 新規登録</Button></DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>新規ボトル登録</DialogTitle></DialogHeader>
-            <div className="space-y-4 py-4">
-              <Input placeholder="ボトルネーム" onChange={e => setFormData({...formData, name: e.target.value})} />
-              <Input placeholder="顧客名（漢字）" onChange={e => setFormData({...formData, customer: e.target.value})} />
+            <div className="space-y-4">
+              <Input placeholder="ボトル名" onChange={e => setFormData({...formData, name: e.target.value})} />
+              <Input placeholder="顧客名" onChange={e => setFormData({...formData, customer: e.target.value})} />
               <Input placeholder="銘柄" onChange={e => setFormData({...formData, brand: e.target.value})} />
-              <Input type="date" onChange={e => setFormData({...formData, date: e.target.value})} />
+              <Button onClick={handleRegister}>送信</Button>
             </div>
-            <DialogFooter>
-              <Button onClick={handleRegister}>登録する</Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
