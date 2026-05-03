@@ -2,48 +2,50 @@
 import { useState, useEffect, useRef } from "react"
 import Papa from "papaparse"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 export default function Home() {
   const [bottles, setBottles] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [isClient, setIsClient] = useState(false)
   const qrRef = useRef<any>(null)
-  
-  // 型エラーを回避するために any を多用します
-  const [Html5QrcodeLib, setHtml5QrcodeLib] = useState<any>(null);
 
+  // 1. マウント判定（サーバーサイドレンダリング対策）
   useEffect(() => {
-    // クライアントサイドでのみ読み込む
-    import('html5-qrcode').then((module: any) => {
-      setHtml5QrcodeLib(module.Html5Qrcode);
-    });
-
+    setIsClient(true);
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrvNwjUCzQn96fo3pMMqvte6XZ89-cc5dbIqBDHSGjkgZnmOhSlu_oOc8ypSrWGcs8MvhZsKdCWJwU/pub?output=csv";
     fetch(csvUrl).then(res => res.text()).then(text => Papa.parse(text, { header: true, complete: (res: any) => setBottles(res.data) }));
   }, []);
 
+  // 2. カメラ起動処理
   useEffect(() => {
-    if (isScannerOpen && Html5QrcodeLib) {
-      setTimeout(() => {
-        const html5QrCode = new Html5QrcodeLib("reader");
-        qrRef.current = html5QrCode;
-        html5QrCode.start(
-          { facingMode: "environment" },
-          { fps: 5, qrbox: 200 },
-          (decodedText: string) => {
-            setSearchTerm(decodedText);
-            setIsScannerOpen(false);
-            html5QrCode.stop().catch(() => {});
-          },
-          (err: any) => {}
-        ).catch((err: any) => console.error(err));
-      }, 500);
-    } else if (qrRef.current) {
-      qrRef.current.stop().catch(() => {});
-    }
-  }, [isScannerOpen, Html5QrcodeLib]);
+    if (!isClient || !isScannerOpen) return;
+
+    let html5QrCode: any = null;
+    
+    // ダイアログが開いた後にカメラを初期化
+    import('html5-qrcode').then((module) => {
+      html5QrCode = new module.Html5Qrcode("reader");
+      qrRef.current = html5QrCode;
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 5, qrbox: 200 },
+        (decodedText: string) => {
+          setSearchTerm(decodedText);
+          setIsScannerOpen(false);
+          html5QrCode.stop().catch(() => {});
+        },
+        () => {}
+      ).catch((err: any) => console.error("Camera error:", err));
+    });
+
+    return () => {
+      if (qrRef.current) qrRef.current.stop().catch(() => {});
+    };
+  }, [isScannerOpen, isClient]);
+
+  if (!isClient) return null; // サーバーサイドでは描画しない
 
   return (
     <main className="p-6">
