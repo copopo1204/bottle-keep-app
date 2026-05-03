@@ -1,26 +1,35 @@
 'use client'
 import { useState, useEffect, useRef } from "react"
 import Papa from "papaparse"
-import { Html5Qrcode } from "html5-qrcode"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+
+// ここが重要：ビルド時のサーバーエラーを回避するために動的に読み込む
+const useQrScanner = () => {
+  const [Html5Qrcode, setHtml5Qrcode] = useState<any>(null);
+  useEffect(() => {
+    import('html5-qrcode').then((module) => {
+      setHtml5Qrcode(module.Html5Qrcode);
+    });
+  }, []);
+  return Html5Qrcode;
+};
 
 export default function Home() {
   const [bottles, setBottles] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [isScannerOpen, setIsScannerOpen] = useState(false)
-  const qrRef = useRef<Html5Qrcode | null>(null)
+  const qrRef = useRef<any>(null)
+  const Html5Qrcode = useQrScanner();
 
-  // 1. スプレッドシート読み込み
   useEffect(() => {
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSrvNwjUCzQn96fo3pMMqvte6XZ89-cc5dbIqBDHSGjkgZnmOhSlu_oOc8ypSrWGcs8MvhZsKdCWJwU/pub?output=csv";
     fetch(csvUrl).then(res => res.text()).then(text => Papa.parse(text, { header: true, complete: (res) => setBottles(res.data) }));
   }, []);
 
-  // 2. iPhone対応：ダイアログが開いてから少し遅れてカメラを起動
   useEffect(() => {
-    if (isScannerOpen) {
+    if (isScannerOpen && Html5Qrcode) {
       setTimeout(() => {
         const html5QrCode = new Html5Qrcode("reader");
         qrRef.current = html5QrCode;
@@ -32,20 +41,16 @@ export default function Home() {
             setIsScannerOpen(false);
             html5QrCode.stop().catch(() => {});
           }
-        ).catch(err => {
-          console.error("カメラ起動エラー:", err);
-          alert("カメラを起動できませんでした。ブラウザの設定でカメラ許可を確認してください。");
-        });
-      }, 500); // 0.5秒待つことでダイアログの描画を待機
+        ).catch(err => console.error("カメラ起動失敗:", err));
+      }, 500);
     } else if (qrRef.current) {
       qrRef.current.stop().catch(() => {});
     }
-  }, [isScannerOpen]);
+  }, [isScannerOpen, Html5Qrcode]);
 
   return (
     <main className="p-6">
-      <h1 className="text-xl font-bold mb-4">ボトルキープ管理</h1>
-      
+      <h1 className="text-xl font-bold mb-4">三島店 ボトルキープ管理</h1>
       <div className="flex flex-col gap-4 max-w-sm">
         <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
           <DialogTrigger asChild>
