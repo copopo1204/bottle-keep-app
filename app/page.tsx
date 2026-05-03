@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
-// ここが重要：ビルド時のサーバーエラーを回避するために動的に読み込む
+// 動的インポート用の型定義
 const useQrScanner = () => {
   const [Html5Qrcode, setHtml5Qrcode] = useState<any>(null);
   useEffect(() => {
@@ -36,12 +36,13 @@ export default function Home() {
         html5QrCode.start(
           { facingMode: "environment" },
           { fps: 5, qrbox: 200 },
-          (decodedText) => {
+          (decodedText: string) => { // ★ここを decodedText: string に修正
             setSearchTerm(decodedText);
             setIsScannerOpen(false);
             html5QrCode.stop().catch(() => {});
-          }
-        ).catch(err => console.error("カメラ起動失敗:", err));
+          },
+          (errorMessage: any) => { /* 必要であればログ出力 */ }
+        ).catch((err: any) => console.error("カメラ起動失敗:", err));
       }, 500);
     } else if (qrRef.current) {
       qrRef.current.stop().catch(() => {});
