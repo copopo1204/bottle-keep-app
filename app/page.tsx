@@ -51,6 +51,9 @@ export default function Home() {
     loadBottles();
   };
 
+  // すでに登録されているボトル名（または銘柄）の重複しないリストを作成
+  const uniqueBottleNames = Array.from(new Set(bottles.map(b => b["ボトル名"] || b["ボトル銘柄"]).filter(Boolean)));
+
   if (!isClient) return null;
 
   return (
@@ -80,9 +83,19 @@ export default function Home() {
           <DialogTrigger asChild><Button variant="secondary" size="lg">＋ 新規登録</Button></DialogTrigger>
           <DialogContent>
             <div className="space-y-3">
-              <Input placeholder="ボトル名" onChange={e => setFormData({...formData, name: e.target.value})} />
-              <Input placeholder="顧客名" onChange={e => setFormData({...formData, customer: e.target.value})} />
-              <Input placeholder="銘柄" onChange={e => setFormData({...formData, brand: e.target.value})} />
+              <Input 
+                list="bottle-names"
+                placeholder="ボトル名" 
+                value={formData.name}
+                onChange={e => setFormData({...formData, name: e.target.value})} 
+              />
+              <datalist id="bottle-names">
+                {uniqueBottleNames.map((name: any, i) => (
+                  <option key={i} value={name} />
+                ))}
+              </datalist>
+              <Input placeholder="顧客名" value={formData.customer} onChange={e => setFormData({...formData, customer: e.target.value})} />
+              <Input placeholder="銘柄" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} />
               <Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
               <Button onClick={handleRegister} className="w-full">登録する</Button>
             </div>
