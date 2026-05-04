@@ -58,34 +58,54 @@ export default function Home() {
 
   return (
     <main className="p-6 max-w-sm mx-auto">
-      <h1 className="text-xl font-bold mb-6">三島店 ボトルキープ管理</h1>
+      <h1 className="text-2xl font-serif font-bold mb-8 text-center tracking-widest drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]">
+        三島店 ボトルキープ管理
+      </h1>
       
       <div className="flex flex-col gap-4">
         {/* 検索・一覧 */}
         <Dialog>
-          <DialogTrigger asChild><Button size="lg" className="w-full">🔍 検索・一覧</Button></DialogTrigger>
-          <DialogContent className="max-h-[80vh] overflow-y-auto">
-            <Input placeholder="名前・銘柄・番号で検索" onChange={(e) => setSearchTerm(e.target.value)} />
+          <DialogTrigger asChild>
+            <Button size="lg" className="w-full bg-[#D4AF37] text-black hover:bg-[#b5952f] transition-all duration-300 hover:scale-105 shadow-[0_0_15px_rgba(212,175,55,0.2)] font-bold">
+              🔍 検索・一覧
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-h-[80vh] overflow-y-auto bg-black border border-[#D4AF37] text-[#D4AF37]">
+            <DialogHeader><DialogTitle className="text-[#D4AF37]">検索・一覧</DialogTitle></DialogHeader>
+            <Input className="bg-transparent border-[#D4AF37] text-[#D4AF37] placeholder:text-[#D4AF37]/50 focus-visible:ring-[#D4AF37]" placeholder="名前・銘柄・番号で検索" onChange={(e) => setSearchTerm(e.target.value)} />
             {bottles.filter(b => b["顧客名（漢字）"]?.includes(searchTerm) || b["ボトル番号"]?.includes(searchTerm)).map((b, i) => (
-              <div key={i} className="p-3 border-b">{b["顧客名（漢字）"]}様 - {b["ボトル銘柄"]} (No.{b["ボトル番号"]})</div>
+              <div key={i} className="p-3 border-b border-[#D4AF37]/30">{b["顧客名（漢字）"]}様 - {b["ボトル銘柄"]} (No.{b["ボトル番号"]})</div>
             ))}
           </DialogContent>
         </Dialog>
 
         {/* QR検索 */}
         <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
-          <DialogTrigger asChild><Button variant="outline" size="lg">📷 QRコード検索</Button></DialogTrigger>
-          <DialogContent className="h-[60vh]"><div id="reader" className="w-full h-full"></div></DialogContent>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="lg" className="bg-transparent border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black transition-all duration-300 hover:scale-105 shadow-[0_0_10px_rgba(212,175,55,0.1)] font-bold">
+              📷 QRコード検索
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="h-[60vh] bg-black border border-[#D4AF37] text-[#D4AF37]">
+            <DialogHeader><DialogTitle className="text-[#D4AF37]">QRコード検索</DialogTitle></DialogHeader>
+            <div id="reader" className="w-full h-full rounded overflow-hidden border border-[#D4AF37]/50"></div>
+          </DialogContent>
         </Dialog>
 
         {/* 新規登録 */}
         <Dialog>
-          <DialogTrigger asChild><Button variant="secondary" size="lg">＋ 新規登録</Button></DialogTrigger>
-          <DialogContent>
+          <DialogTrigger asChild>
+            <Button variant="secondary" size="lg" className="bg-zinc-900 border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-black transition-all duration-300 hover:scale-105 font-bold">
+              ＋ 新規登録
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-black border border-[#D4AF37] text-[#D4AF37]">
+            <DialogHeader><DialogTitle className="text-[#D4AF37]">新規登録</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <Input 
                 list="bottle-names"
                 placeholder="ボトル名" 
+                className="bg-transparent border-[#D4AF37] text-[#D4AF37] placeholder:text-[#D4AF37]/50 focus-visible:ring-[#D4AF37]"
                 value={formData.name}
                 onChange={e => setFormData({...formData, name: e.target.value})} 
               />
@@ -94,10 +114,10 @@ export default function Home() {
                   <option key={i} value={name} />
                 ))}
               </datalist>
-              <Input placeholder="顧客名" value={formData.customer} onChange={e => setFormData({...formData, customer: e.target.value})} />
-              <Input placeholder="銘柄" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} />
-              <Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
-              <Button onClick={handleRegister} className="w-full">登録する</Button>
+              <Input placeholder="顧客名" className="bg-transparent border-[#D4AF37] text-[#D4AF37] placeholder:text-[#D4AF37]/50 focus-visible:ring-[#D4AF37]" value={formData.customer} onChange={e => setFormData({...formData, customer: e.target.value})} />
+              <Input placeholder="銘柄" className="bg-transparent border-[#D4AF37] text-[#D4AF37] placeholder:text-[#D4AF37]/50 focus-visible:ring-[#D4AF37]" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} />
+              <Input type="date" className="bg-transparent border-[#D4AF37] text-[#D4AF37] placeholder:text-[#D4AF37]/50 focus-visible:ring-[#D4AF37] [color-scheme:dark]" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
+              <Button onClick={handleRegister} className="w-full bg-[#D4AF37] text-black hover:bg-[#b5952f] transition-all duration-300 hover:scale-105 font-bold mt-2">登録する</Button>
             </div>
           </DialogContent>
         </Dialog>
